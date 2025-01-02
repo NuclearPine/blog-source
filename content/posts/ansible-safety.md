@@ -2,7 +2,7 @@
 title = "Ansible quick tip: improve playbook safety"
 date = "2024-12-31T21:53:18-07:00"
 #dateFormat = "2006-01-02" # This value can be configured for per-post date formatting
-author = ""
+author = "Jackson Pyrah"
 authorTwitter = "" #do not include @
 cover = ""
 tags = ["ansible"]
