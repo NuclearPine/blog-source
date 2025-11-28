@@ -5,4 +5,4 @@ draft = false
 framed = true
 +++
 
-Welcome to my blog. Here you'll find tips, tutorials, and assorted thoughts on technology.
+Welcome to my blog! Here you'll find posts relating to my homelab as well as well as assorted Linux tips and tutorials I feel like writing about.
