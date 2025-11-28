@@ -20,7 +20,7 @@ jobs:
 
       - name: Generate tag
         id: tagger
-        run: echo "tag=release-$(date +'%Y%m%d')-$(git rev-parse --short HEAD)" >> $GITHUB_OUTPUT"
+        run: echo "tag=release-$(date +'%Y%m%d')-$(git rev-parse --short HEAD)" >> $GITHUB_OUTPUT
 
       - name: Create release
         uses: softprops/action-gh-release@v2
