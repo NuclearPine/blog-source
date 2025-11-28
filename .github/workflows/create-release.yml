@@ -16,7 +16,7 @@ jobs:
         uses: actions/checkout@v6
 
       - name: Create tarball
-        run: tar -czvf site.tar.gz public/
+        run: tar -czvf site.tar.gz -C public .
 
       - name: Generate tag
         id: tagger
