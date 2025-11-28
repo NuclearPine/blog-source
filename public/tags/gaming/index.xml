@@ -1,0 +1,114 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes"?>
+<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
+  <channel>
+    <title>Gaming on Jackson&#39;s Computing Corner</title>
+    <link>/tags/gaming/</link>
+    <description>Recent content in Gaming on Jackson&#39;s Computing Corner</description>
+    <generator>Hugo -- gohugo.io</generator>
+    <language>en</language>
+    <copyright>© 2024 Jackson Pyrah</copyright>
+    <lastBuildDate>Thu, 26 Sep 2024 19:45:44 -0600</lastBuildDate><atom:link href="/tags/gaming/index.xml" rel="self" type="application/rss+xml" />
+    <item>
+      <title>Tutorial: Set up a Minecraft server on Linux</title>
+      <link>/posts/mc-server-tutorial/</link>
+      <pubDate>Thu, 26 Sep 2024 19:45:44 -0600</pubDate>
+      
+      <guid>/posts/mc-server-tutorial/</guid>
+      <description>Recently, I decided to start hosting a Minecraft server for me and a few of my friends. While this was mostly because&amp;hellip;well&amp;hellip;I wanted to play Minecraft, it also occured to me that this is an excellent project for a less experienced user to familiarize themselves with some key skills and concepts that any Linux administrator will find useful.
+By the end of this tutorial, we will have:
+A Minecraft server running for the gaming enjoyment of you and your friends.</description>
+      <content>&lt;p&gt;Recently, I decided to start hosting a Minecraft server for me and a few of my friends. While this was mostly because&amp;hellip;well&amp;hellip;I wanted to play Minecraft, it also occured to me that this is an excellent project for a less experienced user to familiarize themselves with some key skills and concepts that any Linux administrator will find useful.&lt;/p&gt;
+&lt;p&gt;By the end of this tutorial, we will have:&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;A Minecraft server running for the gaming enjoyment of you and your friends.&lt;/li&gt;
+&lt;li&gt;A custom systemd service to supervise the server process.&lt;/li&gt;
+&lt;li&gt;Appropriately configured firewall rules to allow your friends access to the server.&lt;/li&gt;
+&lt;/ul&gt;
+&lt;p&gt;I will assume you already have a suitable system with any modern GNU/Linux distribution installed. For this tutorial, I will be using an Ampere Altra VPS from Oracle Cloud with AlmaLinux 9.4, but the instructions should be mostly identical for any systemd-based Linux distribution. Recommended specs for a Minecraft server depend heavily on which type of server you would like to run (vanilla, spigot, modded, etc) as well as how many players you are expecting to support, so I will not be going over this here.&lt;/p&gt;
+&lt;p&gt;You&amp;rsquo;ll also need git and gcc installed for installing mcrcon.&lt;/p&gt;
+&lt;p&gt;With all that out of the way, let&amp;rsquo;s jump in!&lt;/p&gt;
+&lt;h1 id=&#34;prerequisites&#34;&gt;Prerequisites&lt;/h1&gt;
+&lt;p&gt;We&amp;rsquo;ll start by obtaining a suitable version of Java depending on the Minecraft version we would like to host (more information on that &lt;a href=&#34;https://docs.mcserversoft.com/advanced/java-version&#34;&gt;here&lt;/a&gt;). In my case, I am running a modded 1.20.1 server, so I&amp;rsquo;ll install Java 17 with my distribution&amp;rsquo;s package manager (adjust accordingly for your distribution).&lt;/p&gt;
+&lt;pre tabindex=&#34;0&#34;&gt;&lt;code&gt;# dnf install java-17-openjdk 
+&lt;/code&gt;&lt;/pre&gt;&lt;p&gt;Now we&amp;rsquo;ll download and install &lt;a href=&#34;https://github.com/Tiiffi/mcrcon&#34;&gt;mcrcon&lt;/a&gt; according to its official installation instructions. This is a basic command-line utility that will allow us to easily manage our server from the command line via the RCON protocol. A popular alternative to using RCON as the primary management interface is to simply launch the server in a screen/tmux session that we can attach to whenever you want to run commands from the server side, but I find this a bit clunky when used in combination with systemd, as we&amp;rsquo;ll get to later.&lt;/p&gt;
+&lt;pre tabindex=&#34;0&#34;&gt;&lt;code&gt;$ git clone https://github.com/Tiiffi/mcrcon.git
+$ cd mcrcon
+$ make
+$ sudo make install
+&lt;/code&gt;&lt;/pre&gt;&lt;p&gt;Let&amp;rsquo;s prepare the &lt;code&gt;minecraft&lt;/code&gt; system user, as well as some directories.&lt;/p&gt;
+&lt;pre tabindex=&#34;0&#34;&gt;&lt;code&gt;# useradd --system minecraft
+# mkdir -p /opt/minecraft/{server,backup}
+&lt;/code&gt;&lt;/pre&gt;&lt;p&gt;Our server will be installed into the &lt;code&gt;/opt/minecraft/server&lt;/code&gt; directory. We also have a &lt;code&gt;backup&lt;/code&gt; directory for world backups should we choose to utilize it.&lt;/p&gt;
+&lt;h1 id=&#34;installing-the-minecraft-server&#34;&gt;Installing the Minecraft server&lt;/h1&gt;
+&lt;p&gt;Now it&amp;rsquo;s time to download and install our Minecraft server. This will vary depending on the type of server you want to install, so I&amp;rsquo;ve included some links to helpful documentation for each.&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;&lt;a href=&#34;https://www.minecraft.net/en-us/download/server&#34;&gt;Official vanilla server&lt;/a&gt;&lt;/li&gt;
+&lt;li&gt;&lt;a href=&#34;https://www.spigotmc.org/wiki/spigot-installation/&#34;&gt;Spigot&lt;/a&gt;&lt;/li&gt;
+&lt;li&gt;&lt;a href=&#34;https://minecraft.fandom.com/wiki/Tutorials/Setting_up_a_Minecraft_Forge_server&#34;&gt;Forge&lt;/a&gt;&lt;/li&gt;
+&lt;/ul&gt;
+&lt;p&gt;Once the server .jar file has been placed in the &lt;code&gt;/opt/minecraft/server&lt;/code&gt; directory, I like to manually start the server at least once to generate the world and populate the directory with the various configuration files you can use to manage your server.&lt;/p&gt;
+&lt;p&gt;First let&amp;rsquo;s change the ownership of the &lt;code&gt;/opt/minecraft&lt;/code&gt; directory to the minecraft user.&lt;/p&gt;
+&lt;pre tabindex=&#34;0&#34;&gt;&lt;code&gt;$ sudo chown -R minecraft:minecraft /opt/minecraft
+&lt;/code&gt;&lt;/pre&gt;&lt;p&gt;Accept the Minecraft &lt;a href=&#34;https://aka.ms/MinecraftEULA&#34;&gt;EULA&lt;/a&gt; writing the following to &lt;code&gt;eula.txt&lt;/code&gt;.&lt;/p&gt;
+&lt;pre tabindex=&#34;0&#34;&gt;&lt;code&gt;eula=true
+&lt;/code&gt;&lt;/pre&gt;&lt;p&gt;Then we can start the server.&lt;/p&gt;
+&lt;pre tabindex=&#34;0&#34;&gt;&lt;code&gt;# sudo -i -u minecraft
+$ java -Xmx4096M -Xms1024M -jar server.jar --nogui
+&lt;/code&gt;&lt;/pre&gt;&lt;p&gt;Change the &lt;code&gt;-Xmx&lt;/code&gt; and &lt;code&gt;-Xms&lt;/code&gt; arguments to your desired maximum and minimum RAM allocations respectively for the server, and &lt;code&gt;server.jar&lt;/code&gt; to whatever the name of the jarfile for the server you are running is. Once the server is loaded you&amp;rsquo;ll be dropped into the server console. Type &lt;code&gt;stop&lt;/code&gt; to shutdown the server and exit back to your shell.&lt;/p&gt;
+&lt;p&gt;In the &lt;code&gt;server.properties&lt;/code&gt; file, make sure you set the &lt;code&gt;rcon.password&lt;/code&gt; field to a password of your choice and set &lt;code&gt;enable-rcon&lt;/code&gt; to &lt;code&gt;true&lt;/code&gt;.&lt;/p&gt;
+&lt;h1 id=&#34;managing-the-server-with-systemd&#34;&gt;Managing the server with systemd&lt;/h1&gt;
+&lt;p&gt;Lets start by creating some scripts in the server directory to start and stop our server.&lt;/p&gt;
+&lt;pre tabindex=&#34;0&#34;&gt;&lt;code&gt;#!/bin/sh
+
+### start.sh
+
+java -Xmx4096M -Xms1024M -jar server.jar --nogui
+&lt;/code&gt;&lt;/pre&gt;&lt;p&gt;Like earlier, edit the Java arguments and jarfile name appropriately.&lt;/p&gt;
+&lt;pre tabindex=&#34;0&#34;&gt;&lt;code&gt;#!/bin/sh
+
+### stop.sh
+
+mcrcon -H localhost -p rconpassword &amp;#39;stop&amp;#39;
+&lt;/code&gt;&lt;/pre&gt;&lt;p&gt;Set &lt;code&gt;rconpassword&lt;/code&gt; to the password you set earlier in &lt;code&gt;server.properties&lt;/code&gt;.&lt;/p&gt;
+&lt;h3 id=&#34;note-for-selinux-users&#34;&gt;Note for SELinux users:&lt;/h3&gt;
+&lt;p&gt;If you&amp;rsquo;re using SELinux, you&amp;rsquo;ll have to change the context of these scripts to allow systemd to execute them.&lt;/p&gt;
+&lt;pre tabindex=&#34;0&#34;&gt;&lt;code&gt;# semanage fcontext -a -t bin_t &amp;#34;/opt/minecraft/server(/.*)?&amp;#34;
+# restorecon -R /opt/minecraft/server
+&lt;/code&gt;&lt;/pre&gt;&lt;p&gt;In this case I just decided to change the context of the entire directory in case I wanted to add more/different scripts later.&lt;/p&gt;
+&lt;p&gt;Now we can create our systemd unit file in &lt;code&gt;/etc/systemd/system/minecraft.service&lt;/code&gt;.&lt;/p&gt;
+&lt;pre tabindex=&#34;0&#34;&gt;&lt;code&gt;[Unit]
+Description=Minecraft Server
+
+Wants=network.target
+After=network.target
+
+[Service]
+User=minecraft
+WorkingDirectory=/opt/minecraft/server
+
+ProtectHome=read-only
+ProtectSystem=full
+PrivateDevices=no
+NoNewPrivileges=yes
+PrivateTmp=no
+InaccessiblePaths=/root /sys /srv /media -/lost+found
+ReadWritePaths=/opt/minecraft
+
+ExecStart=/opt/minecraft/server/run.sh
+ExecStop=/opt/minecraft/server/stop.sh
+Restart=always
+RestartSec=10
+&lt;/code&gt;&lt;/pre&gt;&lt;p&gt;This isn&amp;rsquo;t a systemd tutorial so I won&amp;rsquo;t be explaining in great detail what everything here does, but it&amp;rsquo;s mostly self-explanatory. The middle section of the &lt;code&gt;[Service]&lt;/code&gt; stanza contains a variety of options to help enhance the security of our system in case the Minecraft server is compromised.&lt;/p&gt;
+&lt;p&gt;Now that our systemd unit file is written, we can (as root) run &lt;code&gt;systemctl enable --now minecraft.service&lt;/code&gt; to start the server and enable it at boot. We can now manage our server with the typical &lt;code&gt;systemctl&lt;/code&gt; commands such as &lt;code&gt;stop&lt;/code&gt;, &lt;code&gt;start&lt;/code&gt;, &lt;code&gt;restart&lt;/code&gt;, etc.&lt;/p&gt;
+&lt;h1 id=&#34;allow-others-to-connect&#34;&gt;Allow others to connect&lt;/h1&gt;
+&lt;p&gt;The final step is to configure our system firewall to allow external connections to Minecraft. To do this we just need to open TCP port 25565.&lt;/p&gt;
+&lt;pre tabindex=&#34;0&#34;&gt;&lt;code&gt;# firewall-cmd --permanent --add-port 25565/tcp
+# firewall-cmd --reload
+&lt;/code&gt;&lt;/pre&gt;&lt;h3 id=&#34;all-done&#34;&gt;All done!&lt;/h3&gt;
+&lt;p&gt;That&amp;rsquo;s it! We now have a fully functional Minecraft server for cozy gaming with friends. From here, you may want to refer to the Minecraft wiki to configure things such as the server whitelist, server operators, MOTD, etc.&lt;/p&gt;
+&lt;p&gt;We can make backups of your server&amp;rsquo;s worldfile by simply compressing an archive of the &lt;code&gt;world&lt;/code&gt; directory into the &lt;code&gt;/opt/minecraft/backup&lt;/code&gt; folder we created earlier. If you&amp;rsquo;re interested in getting automated backups setup, consider using a tool like &lt;a href=&#34;https://restic.net/&#34;&gt;Restic&lt;/a&gt;.&lt;/p&gt;
+</content>
+    </item>
+    
+  </channel>
+</rss>

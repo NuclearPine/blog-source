@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes"?>
+<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
+  <channel>
+    <title>Automation on Jackson&#39;s Computing Corner</title>
+    <link>//localhost:1313/tags/automation/</link>
+    <description>Recent content in Automation on Jackson&#39;s Computing Corner</description>
+    <generator>Hugo -- gohugo.io</generator>
+    <language>en</language>
+    <copyright>© 2024 Jackson Pyrah</copyright>
+    <lastBuildDate>Tue, 31 Dec 2024 21:53:18 -0700</lastBuildDate><atom:link href="//localhost:1313/tags/automation/index.xml" rel="self" type="application/rss+xml" />
+    <item>
+      <title>Ansible quick tip: improve playbook safety</title>
+      <link>//localhost:1313/posts/ansible-safety/</link>
+      <pubDate>Tue, 31 Dec 2024 21:53:18 -0700</pubDate>
+      
+      <guid>//localhost:1313/posts/ansible-safety/</guid>
+      <description></description>
+      <content></content>
+    </item>
+    
+  </channel>
+</rss>
