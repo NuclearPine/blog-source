@@ -4,7 +4,7 @@ title = "Jackson's Computing Corner"
 # theme = "terminal"
 # ^^ line not necessary when using theme as hugo module
 pluralizelisttitles = false
-paginate = 5
+pagination.pagerSize = 5
 copyright = "© 2024 Jackson Pyrah"
 
 [module]
