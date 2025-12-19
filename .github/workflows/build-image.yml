@@ -75,6 +75,7 @@ jobs:
           tags: tag:ci
           ping: ${{ secrets.SERVER_SSH_HOST }}
       - name: Trigger kubernetes rollout via SSH
+        id: ssh
         uses: appleboy/ssh-action@v1
         with:
           host: ${{ secrets.SERVER_SSH_HOST }}
@@ -83,3 +84,5 @@ jobs:
           fingerprint: ${{ secrets.SERVER_SSH_FINGERPRINT }}
           capture_stdout: true
           script: sudo /usr/local/bin/k0s kubectl rollout restart deployment/blogserver-deployment
+      - name: Print captured output from SSH
+        run: echo "SSH output was; ${{ steps.ssh.outputs.stdout }}"
